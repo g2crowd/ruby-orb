@@ -1,0 +1,3 @@
+description: "Upload test coverage results to Code Climate"
+steps:
+  - run: ./cc-test-reporter sum-coverage --output - codeclimate.*.json | ./cc-test-reporter upload-coverage --debug --input -

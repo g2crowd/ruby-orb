@@ -1,0 +1,12 @@
+description: "Run Code Climate format-coverage command"
+parameters:
+  output:
+    type: string
+    default: "coverage/codeclimate.0.json"
+  after-deps:
+    description: "Steps that will be executed after format-coverage is run"
+    type: steps
+    default: []
+steps:
+  - run: ./cc-test-reporter format-coverage -t simplecov -o << parameters.output >>
+  - steps: << parameters.after-deps >>

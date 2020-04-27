@@ -1,0 +1,35 @@
+description: "The default job for G2 ruby projects"
+parameters:
+  elasticsearch:
+    description: "The `elasticsearch` Docker image version tag."
+    type: string
+    default: "6.5.0"
+  postgres:
+    description: "The `postgres` Docker image version tag."
+    type: string
+    default: "latest"
+  redis:
+    description: "The `redis` Docker image version"
+    type: string
+    default: "latest"
+  ruby:
+    description: "The `circleci/ruby` Docker image version tag."
+    type: string
+    default: "latest"
+executor:
+  name: default
+  ruby: << parameters.ruby >>
+  redis: << parameters.redis >>
+  postgres: << parameters.postgres >>
+  elasticsearch: << parameters.elasticsearch >>
+steps:
+  - checkout
+  - load-cache
+  - install-deps
+  - save-cache
+  - setup-database
+  - install-cc-test-reporter
+  - cc-before-build
+  - run-tests
+  - cc-format-coverage
+  - cc-upload-coverage

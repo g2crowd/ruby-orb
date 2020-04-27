@@ -1,0 +1,3 @@
+description: "Run Code Climate before-build command"
+steps:
+  - run: ./cc-test-reporter before-build

@@ -1,0 +1,29 @@
+description: "The G2 Docker images for Ruby, Postgres, Redis and Elasticsearch"
+parameters:
+  elasticsearch:
+    description: "The `elasticsearch` Docker image version tag."
+    type: string
+    default: "6.5.0"
+  postgres:
+    description: "The `postgres` Docker image version tag."
+    type: string
+    default: "latest"
+  redis:
+    description: "The `redis` Docker image version"
+    type: string
+    default: "latest"
+  ruby:
+    description: "The `circleci/ruby` Docker image version tag."
+    type: string
+    default: "latest"
+docker:
+  - image: circleci/ruby:<< parameters.ruby >>
+    environment:
+      RACK_ENV: test
+      RAILS_ENV: test
+      REDIS_URL: redis://localhost:6379
+  - image: postgres:<< parameters.postgres >>
+    environment:
+      POSTGRES_PASSWORD: postgres
+  - image: redis:<< parameters.redis >>
+  - image: docker.elastic.co/elasticsearch/elasticsearch:<< parameters.elasticsearch >>
