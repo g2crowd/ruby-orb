@@ -1,0 +1,3 @@
+description: "Run Code Climate after-build command"
+steps:
+  - run: ./cc-test-reporter after-build -t simplecov

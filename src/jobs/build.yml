@@ -31,5 +31,4 @@ steps:
   - install-cc-test-reporter
   - cc-before-build
   - run-tests
-  - cc-format-coverage
-  - cc-upload-coverage
+  - cc-after-build
