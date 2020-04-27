@@ -8,6 +8,14 @@ parameters:
     description: "The `postgres` Docker image version tag."
     type: string
     default: "latest"
+  psql:
+    description: "Does psql need to be installed"
+    type: boolean
+    default: false
+  psql-version:
+    description: "What version of PostgreSQL Client needs to be installed?"
+    type: string
+    default: postgresql-client-12
   redis:
     description: "The `redis` Docker image version"
     type: string
@@ -27,7 +35,9 @@ steps:
   - load-cache
   - install-deps
   - save-cache
-  - setup-database
+  - setup-database:
+      psql: << parameters.psql >>
+      psql-version: << parameters.psql-version >>
   - install-cc-test-reporter
   - cc-before-build
   - run-tests
