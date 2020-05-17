@@ -1,5 +1,9 @@
 description: "The default job for G2 ruby projects"
 parameters:
+  bundler-version:
+    description: "The Bundler version to install"
+    type: string
+    default: ""
   elasticsearch:
     description: "The `elasticsearch` Docker image version tag."
     type: string
@@ -33,7 +37,8 @@ executor:
 steps:
   - checkout
   - load-cache
-  - install-deps
+  - install-deps:
+      bundler-version: << parameters.bundler-version >>
   - save-cache
   - setup-database:
       psql: << parameters.psql >>

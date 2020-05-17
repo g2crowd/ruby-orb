@@ -1,5 +1,16 @@
 description: "Install gems with Bundler."
+parameters:
+  bundler-version:
+    description: "The Bundler version to install"
+    type: string
+    default: ""
 steps:
+  - when:
+      condition: << parameters.bundler-version >>
+      steps:
+        - run:
+            name: Install Bundler
+            command: gem install bundler:<< parameters.bundler-version >> --no-document
   - run:
       name: Install gems with Bundler
       command: bundle install --jobs=4 --retry=3 --path vendor/bundle
