@@ -8,3 +8,4 @@ steps:
   - restore_cache:
       keys:
         - << parameters.key >>-{{ checksum "Gemfile.lock" }}
+        - << parameters.key >>-
