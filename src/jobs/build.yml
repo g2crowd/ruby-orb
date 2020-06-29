@@ -7,7 +7,7 @@ parameters:
   elasticsearch:
     description: "The `elasticsearch` Docker image version tag."
     type: string
-    default: "6.5.0"
+    default: "7.8.0"
   postgres:
     description: "The `postgres` Docker image version tag."
     type: string
