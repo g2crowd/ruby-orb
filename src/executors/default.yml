@@ -26,7 +26,7 @@ docker:
     environment:
       POSTGRES_PASSWORD: postgres
   - image: redis:<< parameters.redis >>
-  - image: docker.elastic.co/elasticsearch/elasticsearch:<< parameters.elasticsearch >>
+  - image: elasticsearch:<< parameters.elasticsearch >>
     environment:
       - discovery.type: single-node
       - xpack.security.enabled: false
