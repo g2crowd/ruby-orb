@@ -20,6 +20,10 @@ parameters:
     description: "What version of PostgreSQL Client needs to be installed?"
     type: string
     default: postgresql-client-12
+  setup-database:
+    description: "Do we need to run database migrations?"
+    type: boolean
+    default: true
   redis:
     description: "The `redis` Docker image version"
     type: string
@@ -40,9 +44,12 @@ steps:
   - install-deps:
       bundler-version: << parameters.bundler-version >>
   - save-cache
-  - setup-database:
-      psql: << parameters.psql >>
-      psql-version: << parameters.psql-version >>
+  - when:
+      condition: << parameters.setup-database >>
+      steps:
+        - setup-database:
+            psql: << parameters.psql >>
+            psql-version: << parameters.psql-version >>
   - install-cc-test-reporter
   - cc-before-build
   - run-tests
