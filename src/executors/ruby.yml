@@ -1,0 +1,11 @@
+description: "The G2 Docker image for Ruby"
+parameters:
+  ruby:
+    description: "The `circleci/ruby` Docker image version tag."
+    type: string
+    default: "latest"
+docker:
+  - image: circleci/ruby:<< parameters.ruby >>
+    environment:
+      RACK_ENV: test
+      RAILS_ENV: test

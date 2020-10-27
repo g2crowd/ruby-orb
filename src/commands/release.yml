@@ -1,0 +1,5 @@
+description: "Run rake release"
+steps:
+  - run:
+      name: Release gem
+      command: rake release
