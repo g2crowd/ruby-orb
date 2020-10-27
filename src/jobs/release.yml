@@ -1,0 +1,20 @@
+description: "Job for releasing G2 ruby gems"
+parameters:
+  bundler-version:
+    description: "The Bundler version to install"
+    type: string
+    default: ""
+  ruby:
+    description: "The `circleci/ruby` Docker image version tag."
+    type: string
+    default: "latest"
+executor:
+  name: ruby
+  ruby: << parameters.ruby >>
+steps:
+  - checkout
+  - load-cache
+  - install-deps:
+      bundler-version: << parameters.bundler-version >>
+  - save-cache
+  - release
