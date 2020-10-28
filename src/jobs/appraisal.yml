@@ -1,0 +1,29 @@
+description: "Job for running appraisal"
+parameters:
+  bundler-version:
+    description: "The Bundler version to install"
+    type: string
+    default: "2.1.4"
+  ruby:
+    description: "The `circleci/ruby` Docker image version tag."
+    type: string
+    default: "latest"
+  appraisal:
+    description: "The appraisal to run"
+    type: string
+executor:
+  name: ruby
+  ruby: << parameters.ruby >>
+environment:
+  BUNDLE_GEMFILE: gemfiles/<< parameters.appraisal >>.gemfile
+steps:
+  - checkout
+  - load-cache:
+      gemfile: gemfiles/<< parameters.appraisal >>.gemfile
+  - install-deps:
+      bundler-version: << parameters.bundler-version >>
+  - save-cache:
+      gemfile: gemfiles/<< parameters.appraisal >>.gemfile
+  - run:
+      name: Run Specs
+      command: bundle exec appraisal << parameters.appraisal >> rspec --require fivemat --format Fivemat
