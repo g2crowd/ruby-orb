@@ -4,6 +4,10 @@ parameters:
     description: "The Bundler version to install"
     type: string
     default: ""
+  test-reporter-tag:
+    description: "The tag for the CodeClimate test reporter to download"
+    type: string
+    default: "latest"
   elasticsearch:
     description: "The `elasticsearch` Docker image version tag."
     type: string
@@ -50,7 +54,8 @@ steps:
         - setup-database:
             psql: << parameters.psql >>
             psql-version: << parameters.psql-version >>
-  - install-cc-test-reporter
+  - install-cc-test-reporter:
+      tag: << parameters.test-reporter-tag >>
   - cc-before-build
   - run-tests
   - cc-after-build

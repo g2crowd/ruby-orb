@@ -1,7 +1,12 @@
 description: "Install Code Climate Test Reporter"
+parameters:
+  tag:
+    description: "The Bundler version to install"
+    type: string
+    default: "latest"
 steps:
   - run:
       name: Install Code Climate Test Reporter
       command: |
-        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-<< parameters.tag >>-linux-amd64 > ./cc-test-reporter
         chmod +x ./cc-test-reporter
