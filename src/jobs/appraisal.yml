@@ -1,20 +1,32 @@
 description: "Job for running appraisal"
 parameters:
+  appraisal:
+    description: "The appraisal to run"
+    type: string
   bundler-version:
     description: "The Bundler version to install"
     type: string
     default: "2.1.4"
-  ruby:
-    description: "The `circleci/ruby` Docker image version tag."
-    type: string
-    default: "latest"
-  appraisal:
-    description: "The appraisal to run"
-    type: string
   postgres:
     description: "The `postgres` Docker image version tag."
     type: string
     default: "latest"
+  psql:
+    description: "Does psql need to be installed"
+    type: boolean
+    default: false
+  psql-version:
+    description: "What version of PostgreSQL Client needs to be installed?"
+    type: string
+    default: postgresql-client-12
+  ruby:
+    description: "The `circleci/ruby` Docker image version tag."
+    type: string
+    default: "latest"
+  setup-database:
+    description: "Do we need to run database migrations?"
+    type: boolean
+    default: false
 executor:
   name: ruby-postgres
   ruby: << parameters.ruby >>
@@ -27,6 +39,12 @@ steps:
       gemfile: gemfiles/<< parameters.appraisal >>.gemfile
   - install-deps:
       bundler-version: << parameters.bundler-version >>
+  - when:
+      condition: << parameters.setup-database >>
+      steps:
+        - setup-database:
+            psql: << parameters.psql >>
+            psql-version: << parameters.psql-version >>
   - save-cache:
       gemfile: gemfiles/<< parameters.appraisal >>.gemfile
   - run:
