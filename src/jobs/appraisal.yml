@@ -11,9 +11,14 @@ parameters:
   appraisal:
     description: "The appraisal to run"
     type: string
+  postgres:
+    description: "The `postgres` Docker image version tag."
+    type: string
+    default: "latest"
 executor:
-  name: ruby
+  name: ruby-postgres
   ruby: << parameters.ruby >>
+  postgres: << parameters.postgres >>
 environment:
   BUNDLE_GEMFILE: gemfiles/<< parameters.appraisal >>.gemfile
 steps:
