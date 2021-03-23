@@ -8,6 +8,10 @@ parameters:
     description: "What version of PostgreSQL Client needs to be installed?"
     type: string
     default: postgresql-client-12
+  debian-release:
+    description: "What release of debian should be used to install the PostgreSQL client?"
+    type: string
+    default: buster
 steps:
   - when:
       condition: << parameters.psql >>
@@ -15,7 +19,7 @@ steps:
         - run:
             name: Install PostgreSQL Client
             command: |
-              echo 'deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main' | sudo tee -a /etc/apt/sources.list.d/pgdb.list
+              echo 'deb http://apt.postgresql.org/pub/repos/apt/ << parameters.debian-release >>-pgdg main' | sudo tee -a /etc/apt/sources.list.d/pgdb.list
               wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
               sudo apt-get update
               sudo apt-get install -y << parameters.psql-version >>
