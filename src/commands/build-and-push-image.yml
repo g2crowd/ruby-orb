@@ -1,0 +1,65 @@
+description: Build docker image and push it into AWS ECR
+parameters:
+  aws-ecr-account-url:
+    description: The URL for the ECR
+    type: string
+  aws-ecr-repo-name:
+    description: The name of the ECR repository
+    type: string
+  tag-with-branch-name:
+    description: Tag with current branch name and for main branch use commit hash
+    type: boolean
+    default: true
+  docker-tag-prefix:
+    default: ''
+    description: The URL for your private registry
+    type: string
+  default-branch:
+    default: main
+    description: The name of the default github branch
+    type: string
+  dockerfile:
+    default: Dockerfile
+    description: Name of dockerfile to use. Defaults to Dockerfile.
+    type: string
+  docker-context:
+    default: .
+    description: Path of the docker context
+    type: string
+  extra-build-args:
+    default: ''
+    description: >
+      Extra flags to pass to docker build. For examples, see
+      https://docs.docker.com/engine/reference/commandline/build
+    type: string
+  path:
+    default: .
+    description: >-
+      Path to the directory containing your Dockerfile and build context.
+      Defaults to . (working directory).
+    type: string
+
+steps:
+  - run:
+      name: Docker build and push
+      command: |
+        TAG=""
+        LATEST_TAG="latest"
+        TAG_PREFIX=$(echo <<parameters.docker-tag-prefix>> | sed 's#/#_#g' | sed 's#-#_#g')
+        BRANCH_NAME=$(echo ${CIRCLE_BRANCH} | sed 's#/#_#g' | sed 's#-#_#g')
+        if [ "<<parameters.tag-with-branch-name>>" == "true" ]; then
+          TAG=$([ "${CIRCLE_BRANCH}" == "<<parameters.default-branch>>" ] && echo "prod-${TAG_PREFIX}" || echo "dev-${TAG_PREFIX}")
+        else
+          TAG=$([ "${CIRCLE_BRANCH}" == "<<parameters.default-branch>>" ] && echo "prod-${CIRCLE_SHA1}" || echo "dev-${BRANCH_NAME}")
+        fi
+
+        docker build -t "<<parameters.aws-ecr-account-url>>/<<parameters.aws-ecr-repo-name>>" \
+            <<parameters.extra-build-args>> -f <<parameters.path>>/<<parameters.dockerfile>> <<parameters.docker-context>>
+
+        docker tag "<<parameters.aws-ecr-account-url>>/<<parameters.aws-ecr-repo-name>>" "<<parameters.aws-ecr-account-url>>/<<parameters.aws-ecr-repo-name>>:${TAG}"
+        docker push "<<parameters.aws-ecr-account-url>>/<<parameters.aws-ecr-repo-name>>:${TAG}"
+
+        if [ "${CIRCLE_BRANCH}" == "<<parameters.default-branch>>" ]; then
+          docker tag "<<parameters.aws-ecr-account-url>>/<<parameters.aws-ecr-repo-name>>" "<<parameters.aws-ecr-account-url>>/<<parameters.aws-ecr-repo-name>>:${TAG_PREFIX}${LATEST_TAG}"
+          docker push "<<parameters.aws-ecr-account-url>>/<<parameters.aws-ecr-repo-name>>:${TAG_PREFIX}${LATEST_TAG}"
+        fi
