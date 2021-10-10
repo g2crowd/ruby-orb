@@ -1,0 +1,10 @@
+description: Login into AWS ECR
+parameters:
+  aws-ecr-account-url:
+    description: The URL for your private registry
+    type: string
+steps:
+  - run:
+      name: AWS ECR Login
+      command: |
+        aws ecr get-login-password | docker login --username AWS --password-stdin <<parameters.aws-ecr-account-url>>
