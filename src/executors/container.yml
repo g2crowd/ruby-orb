@@ -1,0 +1,7 @@
+description: "A containerized executor for running jobs"
+parameters:
+  image-tag:
+    description: "The docker image to use"
+    type: string
+docker:
+  - image: << parameters.image-tag >>

@@ -1,9 +1,36 @@
 description: "The default job for G2 ruby projects"
 parameters:
+  default-branch:
+    description: "The default github branch"
+    type: string
+    default: "main"
   bundler-version:
     description: "The Bundler version to install"
     type: string
     default: ""
+  always-run-on-branch:
+    default: ''
+    description: The branch to always run the steps on
+    type: string
+  base-branch:
+    default: master
+    description: The branch against which to check against. This can also be a commit SHA
+    type: string
+  pattern:
+    default: .*
+    description: >
+      The regex to match files against. The command uses grep to search file
+      names.
+
+      If you want to enforce starting with use ^. For checking if files in src/
+      or lib/ were modified,
+
+      the pattern to use would be ^src.*|^lib.*
+    type: string
+  steps-to-run:
+    default: []
+    description: The steps to run if the files mentioned are modified
+    type: steps
   test-reporter-tag:
     description: "The tag for the CodeClimate test reporter to download"
     type: string
@@ -36,26 +63,37 @@ parameters:
     description: "The `circleci/ruby` Docker image version tag."
     type: string
     default: "latest"
+  project-dir:
+    description: "The project directory path for monorepo setup."
+    type: string
+    default: "."
 executor:
   name: default
   ruby: << parameters.ruby >>
   redis: << parameters.redis >>
   postgres: << parameters.postgres >>
   elasticsearch: << parameters.elasticsearch >>
+working_directory: ~/project/<< parameters.project-dir >>
 steps:
-  - checkout
-  - load-cache
-  - install-deps:
-      bundler-version: << parameters.bundler-version >>
-  - save-cache
-  - when:
-      condition: << parameters.setup-database >>
-      steps:
-        - setup-database:
-            psql: << parameters.psql >>
-            psql-version: << parameters.psql-version >>
-  - install-cc-test-reporter:
-      tag: << parameters.test-reporter-tag >>
-  - cc-before-build
-  - run-tests
-  - cc-after-build
+  - checkout:
+      path: ~/project
+  - run-if-modified:
+      always-run-on-branch: << parameters.default-branch >>
+      base-branch: << parameters.default-branch >>
+      pattern: << parameters.pattern >>
+      steps-to-run:
+        - load-cache
+        - install-deps:
+            bundler-version: << parameters.bundler-version >>
+        - save-cache
+        - when:
+            condition: << parameters.setup-database >>
+            steps:
+              - setup-database:
+                  psql: << parameters.psql >>
+                  psql-version: << parameters.psql-version >>
+        - install-cc-test-reporter:
+            tag: << parameters.test-reporter-tag >>
+        - cc-before-build
+        - run-tests
+        - cc-after-build
