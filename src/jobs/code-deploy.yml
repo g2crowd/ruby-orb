@@ -1,0 +1,130 @@
+description: Trigger codedeploy deployment
+parameters:
+  environment:
+    description: |
+      Name of the deployment environment (staging/prod)
+    type: string
+  task-family:
+    description: Task definition family name
+    type: string
+  fargate-platform:
+    default: 1.4.0
+    description: Version of the fargate platform
+    type: string
+  app-name:
+    description: Code deployment group application anme
+    type: string
+  app-ecr:
+    description: Application's ecr repo url without tag
+    type: string
+  web-ecr:
+    default: 235236588722.dkr.ecr.us-east-1.amazonaws.com/nginx
+    description: Web app's ecr repo url without tag
+    type: string
+  web-image-tag:
+    description: Tag of the web app's ecr image
+    type: string
+  aws-account-id:
+    description: Id of the aws account where deployment will be done
+    type: string
+  iam-role:
+    default: buildmaster_role
+    description: The name of the iam role to assume to run deployment
+    type: string
+  default-branch:
+    default: main
+    description: The name of the default github branch
+    type: string
+executor:
+  name: docker
+  image: cimg/base:2021.10
+steps:
+  - install-aws-cli
+  - run:
+      name: Run ECS deploy
+      command: |
+        set -e
+        CURRENT_BRANCH=$(echo $CIRCLE_BRANCH | sed 's#/#_#g' | sed 's#-#_#g')
+
+        echo "[INFO] Triggred <<parameters.environment>> deployment on $CURRENT_BRANCH branch.."
+        aws_credentials=$(aws sts assume-role --role-arn arn:aws:iam::<<parameters.aws-account-id>>:role/<<parameters.iam-role>> --role-session-name "<<parameters.app-name>>")
+        export AWS_ACCESS_KEY_ID=$(echo $aws_credentials|jq '.Credentials.AccessKeyId'|tr -d '"')
+        export AWS_SECRET_ACCESS_KEY=$(echo $aws_credentials|jq '.Credentials.SecretAccessKey'|tr -d '"')
+        export AWS_SESSION_TOKEN=$(echo $aws_credentials|jq '.Credentials.SessionToken'|tr -d '""')
+
+        WEB_IMAGE="<<parameters.web-ecr>>:<<parameters.web-image-tag>>"
+        APP_IMAGE=$([ "$CURRENT_BRANCH" == "<<parameters.default-branch>>" ] && echo "<<parameters.app-ecr>>:prod-$CIRCLE_SHA1" || echo "<<parameters.app-ecr>>:dev-$CURRENT_BRANCH")
+
+        ### create task defination
+        LATEST_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "<<parameters.task-family>>")
+        TASK_DEFINTIION_CONFIG=$(echo $LATEST_TASK_DEFINITION | \
+          jq '.taskDefinition.containerDefinitions[].image |= sub("'<<parameters.app-ecr>>'(prod|dev):.*"; "'$APP_IMAGE'")' | \
+          jq '.taskDefinition.containerDefinitions[].image |= sub("'<<parameters.web-ecr>>':.*"; "'$WEB_IMAGE'")' | \
+          jq '.taskDefinition | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+
+        UPDATED_TASK_DEFINTIION=$(aws ecs register-task-definition --cli-input-json "$TASK_DEFINTIION_CONFIG")
+        TASK_DEFINTIION=$(echo $UPDATED_TASK_DEFINTIION | jq -r '.taskDefinition.taskDefinitionArn')
+        echo "[INFO] Updated task defination: $TASK_DEFINTIION"
+
+        ### trigger deployment
+        APPSPEC_FILE=$(cat \<<-EOF
+        	{
+        		"version": 1,
+        		"Resources": [
+        				{
+        				"TargetService": {
+        					"Type": "AWS::ECS::Service",
+        					"Properties": {
+        						"TaskDefinition": "",
+        						"LoadBalancerInfo": {
+        							"ContainerName": "web",
+        							"ContainerPort": 443
+        						},
+        						"PlatformVersion": ""
+        					}
+        				}
+        			}
+        		]
+        	}
+        	EOF
+        )
+
+        APPSPEC_CONFIG=$(echo $APPSPEC_FILE | jq --arg TD_ARN "$TASK_DEFINTIION" '.Resources[0].TargetService.Properties.TaskDefinition = $TD_ARN' | \
+        	jq --arg FARGATE "<<parameters.fargate-platform>>" '.Resources[0].TargetService.Properties.PlatformVersion = $FARGATE')
+
+        APPSPEC_SHA=$(echo -n "$APPSPEC_CONFIG" | shasum -a 256 | sed 's/ .*$//')
+        REVISION="revisionType=AppSpecContent,appSpecContent={content='$APPSPEC_CONFIG',sha256=$APPSPEC_SHA}"
+
+        DEPLOY_ID=$(aws deploy create-deployment --application-name="<<parameters.app-name>>" --deployment-group-name="<<parameters.app-name>>" \
+          --revision="$REVISION" --output text --query '[deploymentId]')
+
+        ### check deployment status
+        while true; do
+          echo "[INFO] Checking status of deployment $DEPLOY_ID"
+          STATUS=`aws --region us-east-1 deploy get-deployment --deployment-id $DEPLOY_ID | jq '.deploymentInfo.status' | sed 's/\"//g'`
+          echo "[INFO] Status: ${STATUS}"
+
+          if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Stopped" ]; then
+            echo "[ERROR] $DEPLOY_ID deployment $STATUS!"
+            exit 1
+          fi
+
+          if [ "$STATUS" = "Succeeded" ]; then
+            NUM_FAILED=`aws --region us-east-1 deploy get-deployment --deployment-id $DEPLOY_ID | jq '.deploymentInfo.deploymentOverview.Failed'`
+            echo "Num Failed: ${NUM_FAILED}"
+            if [ $NUM_FAILED -eq 0 ]; then
+              echo "[INFO] $DEPLOY_ID deployment $STATUS!"
+              exit 0
+            else
+              echo "[ERROR] $DEPLOY_ID deployment $STATUS!"
+              exit 1
+            fi
+          fi
+
+          echo "Waiting 10s..."
+          sleep 10
+        done
+
+        UNSET AWS_ACCESS_KEY_ID
+        UNSET AWS_SECRET_ACCESS_KEY
+        UNSET AWS_SESSION_TOKEN
