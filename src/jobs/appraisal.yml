@@ -20,7 +20,7 @@ parameters:
     type: string
     default: postgresql-client-12
   ruby:
-    description: "The `circleci/ruby` Docker image version tag."
+    description: "The `cimg/ruby` Docker image version tag."
     type: string
     default: "latest"
   setup-database:

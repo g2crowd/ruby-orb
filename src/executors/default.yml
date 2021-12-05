@@ -13,11 +13,11 @@ parameters:
     type: string
     default: "latest"
   ruby:
-    description: "The `circleci/ruby` Docker image version tag."
+    description: "The `cimg/ruby` Docker image version tag."
     type: string
     default: "latest"
 docker:
-  - image: circleci/ruby:<< parameters.ruby >>
+  - image: cimg/ruby:<< parameters.ruby >>
     environment:
       RACK_ENV: test
       RAILS_ENV: test
