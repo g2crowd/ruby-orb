@@ -5,7 +5,7 @@ parameters:
     type: string
     default: ""
   ruby:
-    description: "The `circleci/ruby` Docker image version tag."
+    description: "The `cimg/ruby` Docker image version tag."
     type: string
     default: "latest"
 executor:
