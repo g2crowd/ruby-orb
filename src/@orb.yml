@@ -2,3 +2,6 @@ version: 2.1
 
 description: |
   Common CircleCI tasks for the Ruby programming language.
+
+orbs:
+  swissknife: roopakv/swissknife@0.59.0

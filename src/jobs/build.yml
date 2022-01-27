@@ -40,27 +40,50 @@ parameters:
     description: "The `cimg/ruby` Docker image version tag."
     type: string
     default: "latest"
+  project-dir:
+    description: "The project directory path for monorepo setup."
+    type: string
+    default: "."
+  default-branch:
+    default: main
+    description: "The name of the default github branch."
+    type: string
+  pattern:
+    default: .*
+    description: >
+      The regex to match files against. The command uses grep to search file
+      names.
+      If you want to enforce starting with use ^. For checking if files in src/
+      or lib/ were modified,
+      the pattern to use would be ^src.*|^lib.*
+    type: string
 executor:
   name: default
   ruby: << parameters.ruby >>
   redis: << parameters.redis >>
   postgres: << parameters.postgres >>
   elasticsearch: << parameters.elasticsearch >>
+working_directory: ~/project/<< parameters.project-dir >>
 steps:
   - checkout
-  - load-cache
-  - install-deps:
-      bundler-version: << parameters.bundler-version >>
-  - save-cache
-  - when:
-      condition: << parameters.setup-database >>
-      steps:
-        - setup-database:
-            psql: << parameters.psql >>
-            psql-version: << parameters.psql-version >>
-  - install-cc-test-reporter:
-      tag: << parameters.test-reporter-tag >>
-  - cc-before-build
-  - run-tests:
-      additional-tests: << parameters.additional-tests >>
-  - cc-after-build
+  - swissknife/run_if_modified:
+      always-run-on-branch: << parameters.default-branch >>
+      base-branch: << parameters.default-branch >>
+      pattern: << parameters.pattern >>
+      steps-to-run:
+        - load-cache
+        - install-deps:
+            bundler-version: << parameters.bundler-version >>
+        - save-cache
+        - when:
+            condition: << parameters.setup-database >>
+            steps:
+              - setup-database:
+                  psql: << parameters.psql >>
+                  psql-version: << parameters.psql-version >>
+        - install-cc-test-reporter:
+            tag: << parameters.test-reporter-tag >>
+        - cc-before-build
+        - run-tests:
+            additional-tests: << parameters.additional-tests >>
+        - cc-after-build
