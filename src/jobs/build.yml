@@ -8,6 +8,10 @@ parameters:
     description: "The tag for the CodeClimate test reporter to download"
     type: string
     default: "latest"
+  additional-tests:
+    description: The steps to run for the additional rspec
+    type: steps
+    default: []
   elasticsearch:
     description: "The `elasticsearch` Docker image version tag."
     type: string
@@ -57,5 +61,6 @@ steps:
   - install-cc-test-reporter:
       tag: << parameters.test-reporter-tag >>
   - cc-before-build
-  - run-tests
+  - run-tests:
+      additional-tests: << parameters.additional-tests >>
   - cc-after-build
