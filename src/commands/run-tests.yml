@@ -1,4 +1,9 @@
 description: "Test with RSpec."
+parameters:
+  additional-tests:
+    description: The steps to run for the additional rspec
+    type: steps
+    default: []
 steps:
   - run:
       name: Run Specs
@@ -6,7 +11,7 @@ steps:
         mkdir /tmp/test-results
         TESTFILES=$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)
         bundle exec rspec --colour --require fivemat --format Fivemat --order rand --format RspecJunitFormatter --out test-results/rspec.xml -- ${TESTFILES}
-
+  - steps: << parameters.additional-tests >>
   - store_test_results:
       path: /tmp/test-results
   - store_artifacts:
